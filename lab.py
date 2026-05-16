@@ -28,7 +28,7 @@ def actualizar_muestra(doc_id, nuevos_datos):
 
 def eliminar_muestra(doc_id):
     db.collection('muestras').document(doc_id).delete()
-    print(f"✔️ Muestra {doc_id} eliminada.")
+    print(f" Muestra {doc_id} eliminada.")
 
 
 # 3. El Menú (Aquí es donde completamos el reto)
