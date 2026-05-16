@@ -14,7 +14,7 @@ try:
     cred = credentials.Certificate(ruta_credenciales)
     firebase_admin.initialize_app(cred)
     db = firestore.client()
-    print("✅ Conexión a Firestore establecida en segundo plano.")
+    print(" Conexión a Firestore establecida en segundo plano.")
 except Exception as e:
     # Si falla la conexión inicial, ni siquiera abrimos la interfaz
     print(f"❌ Error crítico al conectar con Firebase: {e}")
