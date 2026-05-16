@@ -55,6 +55,8 @@ def agregar_datos_clinicos(doctor_email, edad, historial, peso, tipo_muestra, es
         
         # Diccionario con los campos idénticos a tu captura de pantalla
         datos_paciente = {
+            'Nombre': nombre,
+            'Apellidos': apellidos,
             'Age': int(edad),
             'Doctor': str(nombre_doc),
             'Historial': historial,
