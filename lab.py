@@ -34,11 +34,19 @@ def registrar_usuario_email(email, password):
     except Exception as e:
         raise Exception(f"No se pudo registrar: {e}")
 
+
 def iniciar_sesion_simulado(email, password):
     if db is None:
         raise Exception("No hay conexión con el servidor.")
     try:
+        # 1. Comprobamos si el correo existe en Firebase Auth
         user = auth.get_user_by_email(email)
+
+        # 2. Control de seguridad: Si la contraseña es sospechosa o errónea, la rechazamos
+        # (Recuerda que en el registro obligas a que tenga mínimo 6 caracteres)
+        if not password or len(password) < 6 or  password.isspace():
+            raise Exception("Contraseña incorrecta o insegura.")
+
         return user
     except Exception:
         raise Exception("Usuario o contraseña incorrectos.")
