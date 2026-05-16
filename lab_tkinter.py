@@ -67,21 +67,26 @@ def mostrar_formulario_registro():
     tk.Button(frame_btns, text="Registrar", command=ejecutar_registro, bg="#3498db", fg="white", width=12, font=("Arial", 9, "bold")).pack(side="left", padx=5)
     tk.Button(frame_btns, text="Volver", command=mostrar_pantalla_inicial, bg="#95a5a6", fg="white", width=12).pack(side="left", padx=5)
 
+
 def ejecutar_login():
     global usuario_actual
     email = entry_email.get().strip()
     password = entry_password.get().strip()
+
     if not email or not password:
         messagebox.showwarning("Campos vacíos", "Introduce correo y contraseña.")
         return
+
     try:
+        # Le pasamos el email y la contraseña a lab para que los verifique de verdad
         usuario_actual = lab.iniciar_sesion_simulado(email, password)
+
         nombre_limpio = email.split('@')[0]
         messagebox.showinfo("Éxito", f"¡Bienvenido, Doctor/a {nombre_limpio}!")
         ventana_acceso.destroy()
         abrir_ventana_principal()
     except Exception as e:
-        messagebox.showerror("Error", str(e))
+        messagebox.showerror("Error de Acceso", str(e))
 
 def ejecutar_registro():
     email = entry_email.get().strip()
