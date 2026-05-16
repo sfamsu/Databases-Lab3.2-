@@ -65,7 +65,7 @@ def agregar_datos_clinicos(doctor_email, edad, historial, peso, tipo_muestra, es
         datos_paciente = {
             'Nombre': nombre,
             'Apellidos': apellidos,
-            'Age': int(edad),
+            'Edad': int(edad),
             'Doctor': str(nombre_doc),
             'Historial': historial,
             'Peso': float(peso)

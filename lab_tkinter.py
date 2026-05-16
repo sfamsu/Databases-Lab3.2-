@@ -163,7 +163,7 @@ def actualizar_registro_gui():
     valores = item['values']
     paciente_id = str(valores[0])
 
-    nueva_edad = simpledialog.askstring("Modificar", "Nueva Edad (Age):", initialvalue=valores[1])
+    nueva_edad = simpledialog.askstring("Modificar", "Nueva Edad:", initialvalue=valores[1])
     if nueva_edad is None: return
     nuevo_peso = simpledialog.askstring("Modificar", "Nuevo Peso:", initialvalue=valores[2])
     if nuevo_peso is None: return
@@ -224,7 +224,7 @@ def abrir_ventana_principal():
     frame_form = tk.LabelFrame(root, text=" Formulario Clínico (Guardado en documento 'Pacientes') ", padx=10, pady=10)
     frame_form.pack(padx=15, pady=10, fill="x")
     
-    tk.Label(frame_form, text="Edad (Age):").grid(row=0, column=0, sticky="w", pady=5)
+    tk.Label(frame_form, text="Edad:").grid(row=0, column=0, sticky="w", pady=5)
     entry_edad = tk.Entry(frame_form, width=15)
     entry_edad.grid(row=0, column=1, pady=5, padx=5, sticky="w")
     
@@ -252,7 +252,7 @@ def abrir_ventana_principal():
     columnas = ("ID", "Edad", "Peso", "Doctor", "TipoMuestra", "EstadoMuestra", "Historial")
     tree = ttk.Treeview(frame_lista, columns=columnas, show="headings", selectmode="browse")
     tree.heading("ID", text="ID Mapa")
-    tree.heading("Edad", text="Edad (Age)")
+    tree.heading("Edad", text="Edad")
     tree.heading("Peso", text="Peso")
     tree.heading("Doctor", text="Doctor")
     tree.heading("TipoMuestra", text="Tipo Muestra")
