@@ -1,71 +1,134 @@
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth
+from datetime import datetime, timezone
+import random
 
-# 1. Configuración de la llave y conexión
-# Asegúrate de que la ruta coincida con tu carpeta y archivo
-cred = credentials.Certificate("credentials/serviceAccountKey.json")
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+try:
+    cred = credentials.Certificate('credentials/serviceAccountKey.json')
+    firebase_admin.initialize_app(cred)
+    db = firestore.client()
+    print(" Conexión a Firestore y Auth establecida correctamente.")
+except Exception as e:
+    db = None
+    print(f" Error al conectar a Firebase: {e}")
 
+# --- AUTENTICACIÓN: DOCTORES DENTRO DEL DOCUMENTO 'DOCTORES' ---
 
-# 2. Funciones para manejar los datos
-def crear_muestra(datos):
-    doc_ref = db.collection('muestras').add(datos)
-    print(f"✔️ Muestra creada con éxito.")
+def registrar_usuario_email(email, password):
+    if db is None:
+        raise Exception("No hay conexión con el servidor.")
+    try:
+        user = auth.create_user(email=email, password=password)
+        # Extraemos el string limpio antes del @ sin corchetes
+        nombre_doctor = email.split('@')[0]
+        
+        doc_ref = db.collection('Personal').document('Doctores')
+        doc_ref.update({
+            user.uid: {
+                'nombre': str(nombre_doctor),
+                'correo': email,
+                'fecha_alta': datetime.now(timezone.utc)
+            }
+        })
+        return user
+    except Exception as e:
+        raise Exception(f"No se pudo registrar: {e}")
 
+def iniciar_sesion_simulado(email, password):
+    if db is None:
+        raise Exception("No hay conexión con el servidor.")
+    try:
+        user = auth.get_user_by_email(email)
+        return user
+    except Exception:
+        raise Exception("Usuario o contraseña incorrectos.")
 
-def leer_muestras():
-    docs = db.collection('muestras').stream()
-    print("\n--- Listado de Muestras ---")
-    for doc in docs:
-        print(f"ID: {doc.id} => {doc.to_dict()}")
+# --- CRUD CORREGIDO: NUEVO CAMPO DENTRO DEL DOCUMENTO 'Pacientes' DE LA COLECCIÓN 'Clientes' ---
 
+def agregar_datos_clinicos(doctor_email, edad, historial, peso, tipo_muestra, estado_muestra):
+    if db is None:
+        raise Exception("No hay conexión con la base de datos.")
+    try:
+        nombre_doc = doctor_email.split('@')[0]
+        # Generamos un ID numérico de 4 dígitos correlativo al tuyo (ej: 4006, 4007...)
+        id_nuevo_paciente = str(random.randint(4006, 4999))
+        
+        # Diccionario con los campos idénticos a tu captura de pantalla
+        datos_paciente = {
+            'Age': int(edad),
+            'Doctor': str(nombre_doc),
+            'Historial': historial,
+            'Peso': float(peso)
+        }
+        
+        # RUTA EXACTA DE TU CAPTURA: Colección 'Clientes' -> Documento 'Pacientes'
+        doc_ref = db.collection('Clientes').document('Pacientes')
+        
+        # Se añade como un campo nuevo (mapa) debajo de tu registro 4005
+        doc_ref.update({
+            id_nuevo_paciente: datos_paciente
+        })
+        
+        # Colección muestras (intacta, vinculada por el mismo ID numérico)
+        db.collection('muestras').document(id_nuevo_paciente).set({
+            'paciente_id': id_nuevo_paciente,
+            'tipo_muestra': tipo_muestra,
+            'estado_muestra': estado_muestra,
+            'fecha_analisis': datetime.now(timezone.utc)
+        })
+        return id_nuevo_paciente
+    except ValueError:
+        raise Exception("La edad debe ser un número entero y el peso un decimal.")
+    except Exception as e:
+        raise Exception(f"Error en Firestore: {e}")
 
-def actualizar_muestra(doc_id, nuevos_datos):
-    db.collection('muestras').document(doc_id).update(nuevos_datos)
-    print(f"✔️ Muestra {doc_id} actualizada.")
+def leer_todo_el_panel():
+    if db is None:
+        return []
+    try:
+        # Leemos el documento 'Pacientes' de la colección 'Clientes'
+        doc_ref = db.collection('Clientes').document('Pacientes').get()
+        lista_completa = []
+        
+        if doc_ref.exists:
+            todos_los_pacientes = doc_ref.to_dict() or {}
+            for p_id, p_data in todos_los_pacientes.items():
+                if isinstance(p_data, dict):
+                    m_doc = db.collection('muestras').document(str(p_id)).get()
+                    m_data = m_doc.to_dict() if m_doc.exists else {}
+                    
+                    fila = {
+                        'id': p_id,
+                        'Age': p_data.get('Age', 'N/A'),
+                        'Peso': p_data.get('Peso', 'N/A'),
+                        'Doctor': p_data.get('Doctor', 'N/A'),
+                        'Historial': p_data.get('Historial', 'N/A'),
+                        'tipo_muestra': m_data.get('tipo_muestra', 'N/A'),
+                        'estado_muestra': m_data.get('estado_muestra', 'N/A')
+                    }
+                    lista_completa.append(fila)
+        return lista_completa
+    except Exception as e:
+        print(f"Error de lectura: {e}")
+        return []
 
+def actualizar_datos_clinicos(paciente_id, datos_p, datos_m):
+    if db is None:
+        raise Exception("No hay conexión.")
+    try:
+        doc_ref = db.collection('Clientes').document('Pacientes')
+        doc_ref.update({paciente_id: datos_p})
+        db.collection('muestras').document(paciente_id).update(datos_m)
+    except Exception as e:
+        raise Exception(f"Error al actualizar: {e}")
 
-def eliminar_muestra(doc_id):
-    db.collection('muestras').document(doc_id).delete()
-    print(f" Muestra {doc_id} eliminada.")
-
-
-# 3. El Menú (Aquí es donde completamos el reto)
-def menu():
-    while True:
-        print("\n--- GESTIÓN DE LABORATORIO FIREBASE ---")
-        print("1. Insertar muestra")
-        print("2. Ver todas las muestras")
-        print("3. Actualizar estado de muestra")
-        print("4. Eliminar muestra")
-        print("5. Salir")
-
-        opcion = input("\nSeleccione una opción: ")
-
-        if opcion == "1":
-            tipo = input("Tipo de muestra: ")
-            estado = "pendiente"
-            crear_muestra({'tipo': tipo, 'estado': estado})
-
-        elif opcion == "2":
-            leer_muestras()
-
-        elif opcion == "3":
-            leer_muestras()  # Para que veas los IDs
-            doc_id = input("\nCopia y pega el ID de la muestra: ").strip()
-            # RETO COMPLETADO: Pedimos el estado al usuario
-            nuevo_estado = input("Ingrese el nuevo estado (ej: procesada, rechazada): ")
-            actualizar_muestra(doc_id, {'estado': nuevo_estado})
-
-        elif opcion == "4":
-            leer_muestras()
-            doc_id = input("\nID de la muestra a eliminar: ")
-            eliminar_muestra(doc_id)
-
-        elif opcion == "5":
-            break
-
-
-if __name__ == "__main__":
-    menu()
+def eliminar_datos_clinicos(paciente_id):
+    if db is None:
+        raise Exception("No hay conexión.")
+    try:
+        db.collection('Clientes').document('Pacientes').update({
+            paciente_id: firestore.DELETE_FIELD
+        })
+        db.collection('muestras').document(paciente_id).delete()
+    except Exception as e:
+        raise Exception(f"Error al eliminar: {e}")
