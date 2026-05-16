@@ -1,172 +1,272 @@
 import os
 import tkinter as tk
-from tkinter import ttk, messagebox
-import firebase_admin
-from firebase_admin import credentials, firestore
-from datetime import datetime, timezone
+from tkinter import ttk, messagebox, simpledialog
+import lab 
 
-# --- 1. Inicialización y Conexión a Firebase ---
-# Construimos la ruta absoluta para evitar errores de "Archivo no encontrado"
-directorio_actual = os.path.dirname(os.path.abspath(__file__))
-ruta_credenciales = os.path.join(directorio_actual, 'credentials', 'serviceAccountKey.json')
+usuario_actual = None
 
-try:
-    cred = credentials.Certificate(ruta_credenciales)
-    firebase_admin.initialize_app(cred)
-    db = firestore.client()
-    print(" Conexión a Firestore establecida en segundo plano.")
-except Exception as e:
-    # Si falla la conexión inicial, ni siquiera abrimos la interfaz
-    print(f"❌ Error crítico al conectar con Firebase: {e}")
-    exit()
+def mostrar_pantalla_inicial():
+    for widget in ventana_acceso.winfo_children():
+        widget.destroy()
+    ventana_acceso.title("🔒 ClinicData - Acceso")
+    
+    canvas_perfil = tk.Canvas(ventana_acceso, width=80, height=80, bg="#f4f6f9", highlightthickness=0)
+    canvas_perfil.pack(pady=15)
+    canvas_perfil.create_oval(25, 10, 55, 40, fill="#7f8c8d", outline="")
+    canvas_perfil.create_oval(10, 45, 70, 90, fill="#7f8c8d", outline="")
+    
+    tk.Label(ventana_acceso, text="CLINICDATA LOGIN", font=("Arial", 14, "bold"), bg="#f4f6f9", fg="#2c3e50").pack(pady=5)
+    
+    frame_opciones = tk.Frame(ventana_acceso, bg="#f4f6f9")
+    frame_opciones.pack(pady=20)
+    
+    tk.Button(frame_opciones, text="🔑 Iniciar Sesión", command=mostrar_formulario_login, bg="#2ecc71", fg="white", width=18, font=("Arial", 10, "bold"), pady=5).pack(pady=5)
+    tk.Button(frame_opciones, text="📝 Registrarse (Doctores)", command=mostrar_formulario_registro, bg="#3498db", fg="white", width=18, font=("Arial", 10, "bold"), pady=5).pack(pady=5)
 
-# --- 2. Lógica de la Base de Datos vinculada a la Interfaz ---
+def mostrar_formulario_login():
+    global entry_email, entry_password
+    for widget in ventana_acceso.winfo_children():
+        widget.destroy()
+    ventana_acceso.title(" ClinicData - Login")
+    tk.Label(ventana_acceso, text="INICIAR SESIÓN", font=("Arial", 12, "bold"), bg="#f4f6f9", fg="#2c3e50").pack(pady=15)
+    
+    frame_fields = tk.Frame(ventana_acceso, bg="#f4f6f9")
+    frame_fields.pack(pady=5)
+    tk.Label(frame_fields, text="Correo Electrónico:").grid(row=0, column=0, sticky="w", pady=5)
+    entry_email = tk.Entry(frame_fields, width=25)
+    entry_email.grid(row=0, column=1, pady=5, padx=5)
+    
+    tk.Label(frame_fields, text="Contraseña:").grid(row=1, column=0, sticky="w", pady=5)
+    entry_password = tk.Entry(frame_fields, width=25, show="*")
+    entry_password.grid(row=1, column=1, pady=5, padx=5)
+    
+    frame_btns = tk.Frame(ventana_acceso, bg="#f4f6f9")
+    frame_btns.pack(pady=20)
+    tk.Button(frame_btns, text="Entrar", command=ejecutar_login, bg="#2ecc71", fg="white", width=12, font=("Arial", 9, "bold")).pack(side="left", padx=5)
+    tk.Button(frame_btns, text="Volver", command=mostrar_pantalla_inicial, bg="#95a5a6", fg="white", width=12).pack(side="left", padx=5)
+
+def mostrar_formulario_registro():
+    global entry_email, entry_password
+    for widget in ventana_acceso.winfo_children():
+        widget.destroy()
+    ventana_acceso.title(" ClinicData - Alta Doctores")
+    tk.Label(ventana_acceso, text="REGISTRO EN DOCUMENTO 'DOCTORES'", font=("Arial", 11, "bold"), bg="#f4f6f9", fg="#2c3e50").pack(pady=15)
+    
+    frame_fields = tk.Frame(ventana_acceso, bg="#f4f6f9")
+    frame_fields.pack(pady=5)
+    tk.Label(frame_fields, text="Correo Electrónico:").grid(row=0, column=0, sticky="w", pady=5)
+    entry_email = tk.Entry(frame_fields, width=25)
+    entry_email.grid(row=0, column=1, pady=5, padx=5)
+    
+    tk.Label(frame_fields, text="Contraseña:").grid(row=1, column=0, sticky="w", pady=5)
+    entry_password = tk.Entry(frame_fields, width=25, show="*")
+    entry_password.grid(row=1, column=1, pady=5, padx=5)
+    
+    frame_btns = tk.Frame(ventana_acceso, bg="#f4f6f9")
+    frame_btns.pack(pady=20)
+    tk.Button(frame_btns, text="Registrar", command=ejecutar_registro, bg="#3498db", fg="white", width=12, font=("Arial", 9, "bold")).pack(side="left", padx=5)
+    tk.Button(frame_btns, text="Volver", command=mostrar_pantalla_inicial, bg="#95a5a6", fg="white", width=12).pack(side="left", padx=5)
+
+def ejecutar_login():
+    global usuario_actual
+    email = entry_email.get().strip()
+    password = entry_password.get().strip()
+    if not email or not password:
+        messagebox.showwarning("Campos vacíos", "Introduce correo y contraseña.")
+        return
+    try:
+        usuario_actual = lab.iniciar_sesion_simulado(email, password)
+        nombre_limpio = email.split('@')[0]
+        messagebox.showinfo("Éxito", f"¡Bienvenido, Doctor/a {nombre_limpio}!")
+        ventana_acceso.destroy()
+        abrir_ventana_principal()
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
+
+def ejecutar_registro():
+    email = entry_email.get().strip()
+    password = entry_password.get().strip()
+    if not email or not password:
+        messagebox.showwarning("Campos vacíos", "Introduce datos para el registro.")
+        return
+    if len(password) < 6:
+        messagebox.showwarning("Contraseña corta", "La contraseña debe tener al menos 6 caracteres.")
+        return
+    try:
+        lab.registrar_usuario_email(email, password)
+        nombre_limpio = email.split('@')[0]
+        messagebox.showinfo("Éxito", f"Doctor/a {nombre_limpio} guardado correctamente en 'Doctores'.")
+        mostrar_pantalla_inicial()
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
 
 def agregar_desde_gui():
-    nombre = entry_nombre.get().strip()
-    descripcion = entry_descripcion.get().strip()
+    edad = entry_edad.get().strip()
+    peso = entry_peso.get().strip()
+    historial = entry_historial.get().strip()
+    tipo_m = entry_tipo_muestra.get().strip()
+    estado_m = entry_estado_muestra.get().strip()
 
-    # Validación básica
-    if not nombre:
-        messagebox.showwarning("Advertencia", "El nombre no puede estar vacío.")
+    if not edad or not peso or not historial or not tipo_m or not estado_m:
+        messagebox.showwarning("Advertencia", "Todos los campos son obligatorios.")
         return
 
     try:
-        datos_muestra = {
-            'nombre': nombre,
-            'descripcion': descripcion,
-            'fecha_registro': datetime.now(timezone.utc),
-            'estado': 'pendiente'
-        }
+        doc_id = lab.agregar_datos_clinicos(usuario_actual.email, edad, historial, peso, tipo_m, estado_m)
+        messagebox.showinfo("Éxito", f"Paciente añadido debajo del 4005.\nID asignado: {doc_id}")
         
-        _, doc_ref = db.collection('muestras').add(datos_muestra)
-        messagebox.showinfo("Éxito", f"Muestra agregada correctamente.\nID: {doc_ref.id}")
-        
-        # Limpiamos los campos del formulario
-        entry_nombre.delete(0, tk.END)
-        entry_descripcion.delete(0, tk.END)
-        
-        # Refrescamos la tabla automáticamente
-        cargar_muestras_gui() 
-        
+        entry_edad.delete(0, tk.END)
+        entry_peso.delete(0, tk.END)
+        entry_historial.delete(0, tk.END)
+        entry_tipo_muestra.delete(0, tk.END)
+        entry_estado_muestra.delete(0, tk.END)
+        cargar_tabla_completa() 
     except Exception as e:
-        messagebox.showerror("Error", f"Error al agregar la muestra:\n{e}")
+        messagebox.showerror("Error", str(e))
 
-def cargar_muestras_gui():
-    # Limpiamos los datos actuales de la tabla (Treeview)
+def cargar_tabla_completa():
     for row in tree.get_children():
         tree.delete(row)
-
     try:
-        docs = db.collection('muestras').order_by('fecha_registro').stream()
-        for doc in docs:
-            data = doc.to_dict()
-            # Insertamos la fila en la tabla de Tkinter
-            tree.insert("", tk.END, values=(
-                doc.id,
-                data.get('nombre', 'N/A'),
-                data.get('estado', 'N/A')
-            ))
+        filas = lab.leer_todo_el_panel()
+        for f in filas:
+            tree.insert("", tk.END, values=(f['id'], f['Age'], f['Peso'], f['Doctor'], f['tipo_muestra'], f['estado_muestra'], f['Historial']))
     except Exception as e:
-         messagebox.showerror("Error", f"Error al leer las muestras de la base de datos:\n{e}")
+         messagebox.showerror("Error", f"Error de sincronización:\n{e}")
 
-def procesar_muestra_gui():
-    # Obtenemos qué fila ha seleccionado el usuario
+def actualizar_registro_gui():
     seleccion = tree.selection()
     if not seleccion:
-        messagebox.showwarning("Advertencia", "Seleccione una muestra de la lista primero.")
+        messagebox.showwarning("Advertencia", "Seleccione un registro de la lista.")
         return
-
-    # Extraemos el ID (que está en la primera columna oculta visualmente o mostrada)
+    
     item = tree.item(seleccion)
-    doc_id = item['values']
+    valores = item['values']
+    paciente_id = str(valores[0])
+
+    nueva_edad = simpledialog.askstring("Modificar", "Nueva Edad (Age):", initialvalue=valores[1])
+    if nueva_edad is None: return
+    nuevo_peso = simpledialog.askstring("Modificar", "Nuevo Peso:", initialvalue=valores[2])
+    if nuevo_peso is None: return
+    nuevo_tipo = simpledialog.askstring("Modificar", "Nuevo Tipo de Muestra:", initialvalue=valores[4])
+    if nuevo_tipo is None: return
+    nuevo_estado = simpledialog.askstring("Modificar", "Nuevo Estado de Muestra:", initialvalue=valores[5])
+    if nuevo_estado is None: return
+    nuevo_historial = simpledialog.askstring("Modificar", "Historial Clínico:", initialvalue=valores[6])
+    if nuevo_historial is None: return
 
     try:
-        doc_ref = db.collection('muestras').document(doc_id)
-        doc_ref.update({'estado': 'procesada'})
-        messagebox.showinfo("Éxito", f"Muestra actualizada a 'procesada'.")
-        cargar_muestras_gui() # Refrescar para ver el cambio
+        nombre_doc = usuario_actual.email.split('@')[0]
+        datos_p = {'Age': int(nueva_edad), 'Peso': float(nuevo_peso), 'Historial': nuevo_historial, 'Doctor': str(nombre_doc)}
+        datos_m = {'tipo_muestra': nuevo_tipo, 'estado_muestra': nuevo_estado}
+        
+        lab.actualizar_datos_clinicos(paciente_id, datos_p, datos_m)
+        messagebox.showinfo("Éxito", "Campos actualizados correctamente.")
+        cargar_tabla_completa()
     except Exception as e:
-        messagebox.showerror("Error", f"Error al actualizar:\n{e}")
+        messagebox.showerror("Error", str(e))
 
 def borrar_muestra_gui():
     seleccion = tree.selection()
     if not seleccion:
-        messagebox.showwarning("Advertencia", "Seleccione una muestra de la lista primero.")
+        messagebox.showwarning("Advertencia", "Seleccione un registro primero.")
         return
-
     item = tree.item(seleccion)
-    doc_id = item['values']
+    valores = item['values']
+    paciente_id = str(valores[0])
 
-    # Cuadro de diálogo de confirmación
-    confirmacion = messagebox.askyesno("Confirmar Borrado", f"¿Está seguro de borrar definitivamente la muestra {doc_id}?")
-    
-    if confirmacion:
+    if messagebox.askyesno("Confirmar", f"¿Eliminar el campo del paciente {paciente_id}?"):
         try:
-            doc_ref = db.collection('muestras').document(doc_id)
-            doc_ref.delete()
-            messagebox.showinfo("Éxito", "Muestra eliminada.")
-            cargar_muestras_gui()
+            lab.eliminar_datos_clinicos(paciente_id)
+            messagebox.showinfo("Éxito", "Campo eliminado del documento.")
+            cargar_tabla_completa()
         except Exception as e:
-             messagebox.showerror("Error", f"Error al intentar borrar:\n{e}")
+             messagebox.showerror("Error", str(e))
 
+def abrir_ventana_principal():
+    global entry_edad, entry_peso, entry_historial, entry_tipo_muestra, entry_estado_muestra, tree
+    root = tk.Tk()
+    root.title("🔬 ClinicData - Sistema Integrado")
+    root.geometry("900x600")
+    
+    frame_header = tk.Frame(root, bg="#2c3e50", height=50)
+    frame_header.pack(fill="x", side="top")
+    tk.Label(frame_header, text=" CLINICDATA - ARCHIVO DE PACIENTES", font=("Arial", 11, "bold"), fg="white", bg="#2c3e50").pack(side="left", padx=15, pady=10)
+    
+    avatar_canvas = tk.Canvas(frame_header, width=35, height=35, bg="#2c3e50", highlightthickness=0)
+    avatar_canvas.pack(side="right", padx=15, pady=5)
+    avatar_canvas.create_oval(2, 2, 33, 33, fill="#3498db", outline="")
+    
+    nombre_doc = usuario_actual.email.split('@')[0]
+    avatar_canvas.create_text(18, 18, text=nombre_doc[:4].upper(), fill="white", font=("Arial", 8, "bold"))
+    tk.Label(frame_header, text=f"Doctor/a: {nombre_doc}", font=("Arial", 9), fg="white", bg="#2c3e50").pack(side="right", padx=5)
 
-# --- 3. Construcción de la Interfaz Gráfica (Ventana) ---
+    frame_form = tk.LabelFrame(root, text=" Formulario Clínico (Guardado en documento 'Pacientes') ", padx=10, pady=10)
+    frame_form.pack(padx=15, pady=10, fill="x")
+    
+    tk.Label(frame_form, text="Edad (Age):").grid(row=0, column=0, sticky="w", pady=5)
+    entry_edad = tk.Entry(frame_form, width=15)
+    entry_edad.grid(row=0, column=1, pady=5, padx=5, sticky="w")
+    
+    tk.Label(frame_form, text="Peso (Kg):").grid(row=0, column=2, sticky="w", pady=5, padx=15)
+    entry_peso = tk.Entry(frame_form, width=15)
+    entry_peso.grid(row=0, column=3, pady=5, padx=5, sticky="w")
+    
+    tk.Label(frame_form, text="Tipo Muestra:").grid(row=0, column=4, sticky="w", pady=5, padx=15)
+    entry_tipo_muestra = tk.Entry(frame_form, width=20)
+    entry_tipo_muestra.grid(row=0, column=5, pady=5, padx=5, sticky="w")
 
-root = tk.Tk()
-root.title("🔬 Gestor de Laboratorio V2 (GUI)")
-root.geometry("650x500")
+    tk.Label(frame_form, text="Estado Muestra:").grid(row=1, column=0, sticky="w", pady=5)
+    entry_estado_muestra = tk.Entry(frame_form, width=15)
+    entry_estado_muestra.grid(row=1, column=1, pady=5, padx=5, sticky="w")
 
-# --- Panel Superior: Formulario de Entrada ---
-frame_form = tk.LabelFrame(root, text="Registrar Nueva Muestra", padx=10, pady=10)
-frame_form.pack(padx=10, pady=10, fill="x")
+    tk.Label(frame_form, text="Historial Clínico:").grid(row=1, column=2, sticky="w", pady=5, padx=15)
+    entry_historial = tk.Entry(frame_form, width=52)
+    entry_historial.grid(row=1, column=3, columnspan=3, pady=5, padx=5, sticky="w")
+    
+    tk.Button(frame_form, text="Guardar Registro Clínico", command=agregar_desde_gui, bg="#3498db", fg="white", font=("Arial", 9, "bold")).grid(row=2, columnspan=6, pady=10)
 
-tk.Label(frame_form, text="Nombre:").grid(row=0, column=0, sticky="w", pady=5)
-entry_nombre = tk.Entry(frame_form, width=50)
-entry_nombre.grid(row=0, column=1, pady=5, padx=5)
+    frame_lista = tk.LabelFrame(root, text=" Campos del documento 'Pacientes' en Tiempo Real ", padx=10, pady=10)
+    frame_lista.pack(padx=15, pady=5, fill="both", expand=True)
 
-tk.Label(frame_form, text="Descripción:").grid(row=1, column=0, sticky="w", pady=5)
-entry_descripcion = tk.Entry(frame_form, width=50)
-entry_descripcion.grid(row=1, column=1, pady=5, padx=5)
+    columnas = ("ID", "Edad", "Peso", "Doctor", "TipoMuestra", "EstadoMuestra", "Historial")
+    tree = ttk.Treeview(frame_lista, columns=columnas, show="headings", selectmode="browse")
+    tree.heading("ID", text="ID Mapa")
+    tree.heading("Edad", text="Edad (Age)")
+    tree.heading("Peso", text="Peso")
+    tree.heading("Doctor", text="Doctor")
+    tree.heading("TipoMuestra", text="Tipo Muestra")
+    tree.heading("EstadoMuestra", text="Estado Muestra")
+    tree.heading("Historial", text="Historial")
+    
+    tree.column("ID", width=90, anchor="center")
+    tree.column("Edad", width=70, anchor="center")
+    tree.column("Peso", width=70, anchor="center")
+    tree.column("Doctor", width=100, anchor="center")
+    tree.column("TipoMuestra", width=120, anchor="center")
+    tree.column("EstadoMuestra", width=120, anchor="center")
+    tree.column("Historial", width=220)
+    tree.pack(fill="both", expand=True)
 
-btn_agregar = tk.Button(frame_form, text="Agregar Muestra", command=agregar_desde_gui, bg="lightblue")
-btn_agregar.grid(row=2, columnspan=2, pady=10)
+    frame_acciones = tk.Frame(root, pady=10)
+    frame_acciones.pack(fill="x", padx=15)
 
+    tk.Button(frame_acciones, text=" Actualizar Registro", command=actualizar_registro_gui, bg="#2ecc71", fg="white", font=("Arial", 10, "bold")).pack(side="left", padx=5)
+    tk.Button(frame_acciones, text=" Eliminar Ficha", command=borrar_muestra_gui, bg="#e74c3c", fg="white", font=("Arial", 10, "bold")).pack(side="right", padx=5)
 
-# --- Panel Central: Tabla (Treeview) ---
-frame_lista = tk.LabelFrame(root, text="Muestras en la Base de Datos", padx=10, pady=10)
-frame_lista.pack(padx=10, pady=5, fill="both", expand=True)
+    cargar_tabla_completa()
+    root.mainloop()
 
-# Configuramos las columnas
-columnas = ("ID", "Nombre", "Estado")
-tree = ttk.Treeview(frame_lista, columns=columnas, show="headings", selectmode="browse")
-tree.heading("ID", text="ID Documento")
-tree.heading("Nombre", text="Nombre")
-tree.heading("Estado", text="Estado")
+# --- ARRANQUE ---
+if lab.db is None:
+    root_err = tk.Tk()
+    root_err.withdraw()
+    messagebox.showerror("Error", "No se detecta la base de datos.")
+    exit()
 
-# Tamaños de las columnas
-tree.column("ID", width=180)
-tree.column("Nombre", width=250)
-tree.column("Estado", width=100)
-
-tree.pack(fill="both", expand=True)
-
-
-# --- Panel Inferior: Botones de Acción ---
-frame_acciones = tk.Frame(root, pady=10)
-frame_acciones.pack(fill="x")
-
-btn_refrescar = tk.Button(frame_acciones, text="🔄 Refrescar Lista", command=cargar_muestras_gui)
-btn_refrescar.pack(side="left", padx=10)
-
-btn_procesar = tk.Button(frame_acciones, text="✅ Marcar como 'Procesada'", command=procesar_muestra_gui, bg="lightgreen")
-btn_procesar.pack(side="left", padx=10)
-
-btn_borrar = tk.Button(frame_acciones, text="🗑️ Borrar Muestra", command=borrar_muestra_gui, bg="salmon")
-btn_borrar.pack(side="right", padx=10)
-
-# Al iniciar el programa, cargamos la lista de muestras automáticamente
-cargar_muestras_gui()
-
-# Iniciamos el bucle de la interfaz gráfica
-root.mainloop()
+ventana_acceso = tk.Tk()
+ventana_acceso.geometry("380x300")
+ventana_acceso.resizable(False, False)
+ventana_acceso.configure(bg="#f4f6f9")
+mostrar_pantalla_inicial()
+ventana_acceso.mainloop()
