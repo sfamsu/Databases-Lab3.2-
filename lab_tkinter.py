@@ -129,15 +129,13 @@ def cerrar_sesion_gui():
     global usuario_actual
     if messagebox.askyesno("Cerrar Sesión", "¿Seguro que deseas salir del sistema clínico?"):
         usuario_actual = None  # Olvidamos al doctor actual
-        # Buscamos la ventana principal activa de los pacientes y la destruimos
-        for widget in ventana_acceso.master.winfo_children() if hasattr(ventana_acceso, 'master') else []:
-            pass
-            # El truco más limpio: cerramos todo y reiniciamos la app desde el login
+
+        # Cerramos de forma segura la ventana principal actual
         root_actual = tk._default_root
         if root_actual:
-            root_actual.destroy()  # Cierra la pantalla médica
+            root_actual.destroy()
 
-        # Volvemos a arrancar la ventanita de inicio de sesión obligatoria
+        # Reiniciamos la aplicación limpia desde el archivo principal
         os.system("python lab_tkinter.py")
 
 def cargar_tabla_completa():
