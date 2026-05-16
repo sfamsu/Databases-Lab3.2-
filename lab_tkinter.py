@@ -124,6 +124,22 @@ def agregar_desde_gui():
     except Exception as e:
         messagebox.showerror("Error", str(e))
 
+
+def cerrar_sesion_gui():
+    global usuario_actual
+    if messagebox.askyesno("Cerrar Sesión", "¿Seguro que deseas salir del sistema clínico?"):
+        usuario_actual = None  # Olvidamos al doctor actual
+        # Buscamos la ventana principal activa de los pacientes y la destruimos
+        for widget in ventana_acceso.master.winfo_children() if hasattr(ventana_acceso, 'master') else []:
+            pass
+            # El truco más limpio: cerramos todo y reiniciamos la app desde el login
+        root_actual = tk._default_root
+        if root_actual:
+            root_actual.destroy()  # Cierra la pantalla médica
+
+        # Volvemos a arrancar la ventanita de inicio de sesión obligatoria
+        os.system("python lab_tkinter.py")
+
 def cargar_tabla_completa():
     for row in tree.get_children():
         tree.delete(row)
@@ -192,7 +208,8 @@ def abrir_ventana_principal():
     frame_header = tk.Frame(root, bg="#2c3e50", height=50)
     frame_header.pack(fill="x", side="top")
     tk.Label(frame_header, text=" CLINICDATA - ARCHIVO DE PACIENTES", font=("Arial", 11, "bold"), fg="white", bg="#2c3e50").pack(side="left", padx=15, pady=10)
-    
+    tk.Button(frame_header, text="🚪 Cerrar Sesión", command=cerrar_sesion_gui, bg="#e74c3c", fg="white", font=("Arial", 9, "bold"), padx=10).pack(side="right", padx=10, pady=10)
+
     avatar_canvas = tk.Canvas(frame_header, width=35, height=35, bg="#2c3e50", highlightthickness=0)
     avatar_canvas.pack(side="right", padx=15, pady=5)
     avatar_canvas.create_oval(2, 2, 33, 33, fill="#3498db", outline="")
