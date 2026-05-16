@@ -8,7 +8,7 @@ usuario_actual = None
 def mostrar_pantalla_inicial():
     for widget in ventana_acceso.winfo_children():
         widget.destroy()
-    ventana_acceso.title("🔒 ClinicData - Acceso")
+    ventana_acceso.title(" ClinicData - Acceso")
     
     canvas_perfil = tk.Canvas(ventana_acceso, width=80, height=80, bg="#f4f6f9", highlightthickness=0)
     canvas_perfil.pack(pady=15)
@@ -20,8 +20,8 @@ def mostrar_pantalla_inicial():
     frame_opciones = tk.Frame(ventana_acceso, bg="#f4f6f9")
     frame_opciones.pack(pady=20)
     
-    tk.Button(frame_opciones, text="🔑 Iniciar Sesión", command=mostrar_formulario_login, bg="#2ecc71", fg="white", width=18, font=("Arial", 10, "bold"), pady=5).pack(pady=5)
-    tk.Button(frame_opciones, text="📝 Registrarse (Doctores)", command=mostrar_formulario_registro, bg="#3498db", fg="white", width=18, font=("Arial", 10, "bold"), pady=5).pack(pady=5)
+    tk.Button(frame_opciones, text="Iniciar Sesión", command=mostrar_formulario_login, bg="#2ecc71", fg="white", width=18, font=("Arial", 10, "bold"), pady=5).pack(pady=5)
+    tk.Button(frame_opciones, text="Registrarse (Doctores)", command=mostrar_formulario_registro, bg="#3498db", fg="white", width=18, font=("Arial", 10, "bold"), pady=5).pack(pady=5)
 
 def mostrar_formulario_login():
     global entry_email, entry_password
@@ -200,13 +200,13 @@ def borrar_muestra_gui():
 def abrir_ventana_principal():
     global entry_edad, entry_peso, entry_historial, entry_tipo_muestra, entry_estado_muestra, tree
     root = tk.Tk()
-    root.title("🔬 ClinicData - Sistema Integrado")
+    root.title("ClinicData - Sistema Integrado")
     root.geometry("900x600")
     
     frame_header = tk.Frame(root, bg="#2c3e50", height=50)
     frame_header.pack(fill="x", side="top")
     tk.Label(frame_header, text=" CLINICDATA - ARCHIVO DE PACIENTES", font=("Arial", 11, "bold"), fg="white", bg="#2c3e50").pack(side="left", padx=15, pady=10)
-    tk.Button(frame_header, text="🚪 Cerrar Sesión", command=cerrar_sesion_gui, bg="#e74c3c", fg="white", font=("Arial", 9, "bold"), padx=10).pack(side="right", padx=10, pady=10)
+    tk.Button(frame_header, text="Cerrar Sesión", command=cerrar_sesion_gui, bg="#e74c3c", fg="white", font=("Arial", 9, "bold"), padx=10).pack(side="right", padx=10, pady=10)
 
     avatar_canvas = tk.Canvas(frame_header, width=35, height=35, bg="#2c3e50", highlightthickness=0)
     avatar_canvas.pack(side="right", padx=15, pady=5)
