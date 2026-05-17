@@ -46,7 +46,7 @@ def mostrar_formulario_login():
     tk.Button(frame_btns, text="Volver", command=mostrar_pantalla_inicial, bg="#95a5a6", fg="white", width=12).pack(side="left", padx=5)
 
 def mostrar_formulario_registro():
-    global entry_email, entry_password
+    global entry_email, entry_password, entry_nombre, entry_apellido
     for widget in ventana_acceso.winfo_children():
         widget.destroy()
     ventana_acceso.title(" ClinicData - Alta Doctores")
@@ -54,26 +54,37 @@ def mostrar_formulario_registro():
     
     frame_fields = tk.Frame(ventana_acceso, bg="#f4f6f9")
     frame_fields.pack(pady=5)
-    tk.Label(frame_fields, text="Correo Electrónico:").grid(row=0, column=0, sticky="w", pady=5)
-    entry_email = tk.Entry(frame_fields, width=25)
-    entry_email.grid(row=0, column=1, pady=5, padx=5)
     
-    tk.Label(frame_fields, text="Contraseña:").grid(row=1, column=0, sticky="w", pady=5)
+tk.Label(frame_fields, text="Nombre:").grid(row=0, column=0, sticky="w", pady=5)
+    entry_nombre = tk.Entry(frame_fields, width=25)
+    entry_nombre.grid(row=0, column=1, pady=5, padx=5)
+    
+    tk.Label(frame_fields, text="Apellido:").grid(row=1, column=0, sticky="w", pady=5)
+    entry_apellido = tk.Entry(frame_fields, width=25)
+    entry_apellido.grid(row=1, column=1, pady=5, padx=5)
+    
+    tk.Label(frame_fields, text="Correo Electrónico:").grid(row=2, column=0, sticky="w", pady=5)
+    entry_email = tk.Entry(frame_fields, width=25)
+    entry_email.grid(row=2, column=1, pady=5, padx=5)
+    
+    tk.Label(frame_fields, text="Contraseña:").grid(row=3, column=0, sticky="w", pady=5)
     entry_password = tk.Entry(frame_fields, width=25, show="*")
-    entry_password.grid(row=1, column=1, pady=5, padx=5)
+    entry_password.grid(row=3, column=1, pady=5, padx=5)
     
     frame_btns = tk.Frame(ventana_acceso, bg="#f4f6f9")
     frame_btns.pack(pady=20)
     tk.Button(frame_btns, text="Registrar", command=ejecutar_registro, bg="#3498db", fg="white", width=12, font=("Arial", 9, "bold")).pack(side="left", padx=5)
-    tk.Button(frame_btns, text="Volver", command=mostrar_pantalla_inicial, bg="#95a5a6", fg="white", width=12).pack(side="left", padx=5)
+    tk.Button(frame_btns, text="Volver", command=lambda: [ventana_acceso.geometry("380x300"), mostrar_pantalla_inicial()], bg="#95a5a6", fg="white", width=12).pack(side="left", padx=5)
 
 def ejecutar_login():
     global usuario_actual
     email = entry_email.get().strip()
     password = entry_password.get().strip()
+    
     if not email or not password:
         messagebox.showwarning("Campos vacíos", "Introduce correo y contraseña.")
         return
+        
     try:
         usuario_actual = lab.iniciar_sesion_simulado(email, password)
         nombre_limpio = email.split('@')[0]
@@ -84,17 +95,19 @@ def ejecutar_login():
         messagebox.showerror("Error", str(e))
 
 def ejecutar_registro():
+    nombre = entry_nombre.get().strip()
+    apellido = entry_apellido.get().strip()
     email = entry_email.get().strip()
     password = entry_password.get().strip()
-    if not email or not password:
-        messagebox.showwarning("Campos vacíos", "Introduce datos para el registro.")
+    
+    if not nombre or not apellido or not email or not password:
+        messagebox.showwarning("Campos vacíos", "Todos los campos son obligatorios para el registro.")
         return
     if len(password) < 6:
         messagebox.showwarning("Contraseña corta", "La contraseña debe tener al menos 6 caracteres.")
         return
     try:
-        lab.registrar_usuario_email(email, password)
-        nombre_limpio = email.split('@')[0]
+        lab.registrar_usuario_email(nombre, apellido, email, password)
         messagebox.showinfo("Éxito", f"Doctor/a {nombre_limpio} guardado correctamente en 'Doctores'.")
         mostrar_pantalla_inicial()
     except Exception as e:
