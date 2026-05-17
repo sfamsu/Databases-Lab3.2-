@@ -170,36 +170,56 @@ def cargar_tabla_completa():
 
 def actualizar_registro_gui():
     seleccion = tree.selection()
-    if not seleccion: return
-    item = tree.item(seleccion);
-    valores = item['values'];
-    p_id = str(valores[0])
+    if not seleccion:
+        messagebox.showwarning("Advertencia", "Por favor, selecciona un paciente de la tabla.")
+        return
 
+    item = tree.item(seleccion)
+    valores = item['values']
+    p_id = str(valores[0])  # El ID del paciente seleccionado
 
-    campo = simpledialog.askstring("Actualizar", "Opciones: Edad, Peso, Historial, Doctor, Estado")
-    if not campo: return
+    # 🟢 Opciones reales y humanas según vuestro Firebase del hospital
+    menu_opciones = "Opciones disponibles:\n• Edad\n• Peso\n• ID Doctor\n• Síntomas\n• Test\n• Historial"
+    campo = simpledialog.askstring("Actualizar Registro", menu_opciones)
+
+    if not campo:
+        return
     campo = campo.lower().strip()
+
     try:
-        if campo == "edad":
-            n = simpledialog.askstring("Edad", "Nueva edad:", initialvalue=valores[1])
-            lab.actualizar_datos_clinicos(p_id, {'Edad': int(n)}, {})
-        elif campo == "peso":
-            n = simpledialog.askstring("Peso", "Nuevo peso:", initialvalue=valores[2])
-            lab.actualizar_datos_clinicos(p_id, {'Peso': float(n)}, {})
-        elif campo == "doctor":
-            n = simpledialog.askstring("Doctor", "Nuevo Doctor:", initialvalue=valores[3])
-            lab.actualizar_datos_clinicos(p_id, {'Doctor': n}, {})
-        elif campo == "estado":
-            n = simpledialog.askstring("Estado", "Nuevo Estado:", initialvalue=valores[5])
-            lab.actualizar_datos_clinicos(p_id, {}, {'estado_muestra': n})
-        elif campo == "historial":
-            n = simpledialog.askstring("Historial", "Nuevo Historial:", initialvalue=valores[6])
-            lab.actualizar_datos_clinicos(p_id, {'Historial': n}, {})
+        if campo in ["edad", "age"]:
+            n = simpledialog.askstring("Modificar Edad", "Nueva edad del paciente:", initialvalue=valores[1])
+            if n: lab.actualizar_datos_clinicos(p_id, {'Age': int(n)}, {})
+
+        elif campo in ["peso"]:
+            n = simpledialog.askstring("Modificar Peso", "Nuevo peso del paciente:", initialvalue=valores[2])
+            if n: lab.actualizar_datos_clinicos(p_id, {'Peso': float(n)}, {})
+
+        elif campo in ["id doctor", "doctor", "id_doctor"]:
+            n = simpledialog.askstring("Modificar Médico", "Nuevo ID del Doctor asignado:", initialvalue=valores[3])
+            if n: lab.actualizar_datos_clinicos(p_id, {'Doctor': int(n)}, {})
+
+        elif campo in ["síntomas", "sintomas", "síntoma", "sintoma"]:
+            n = simpledialog.askstring("Modificar Síntomas", "Nueva descripción del síntoma cardíaco:",
+                                       initialvalue=valores[4])
+            if n: lab.actualizar_datos_clinicos(p_id, {}, {'Descripción': n})  # Va a la subcolección Sintomas
+
+        elif campo in ["test", "resultados", "resultado"]:
+            n = simpledialog.askstring("Modificar Test", "Nuevos resultados del test (Ej: ECG):",
+                                       initialvalue=valores[5])
+            if n: lab.actualizar_datos_clinicos(p_id, {}, {'Results': n})  # Va a la subcolección test
+
+        elif campo in ["historial", "diagnóstico", "diagnostico"]:
+            n = simpledialog.askstring("Modificar Historial", "Actualizar historial clínico:", initialvalue=valores[6])
+            if n: lab.actualizar_datos_clinicos(p_id, {'Historial': n}, {})
+        else:
+            messagebox.showwarning("Campo no reconocido", "Por favor, escribe una opción válida de la lista.")
+            return
 
         cargar_tabla_completa()
-        messagebox.showinfo("Éxito", "Actualizado.")
+        messagebox.showinfo("Éxito", f"¡Registro del paciente {p_id} actualizado correctamente!")
     except Exception as e:
-        messagebox.showerror("Error", str(e))
+        messagebox.showerror("Error", f"No se pudo actualizar:\n{e}")
 
 def borrar_muestra_gui():
     seleccion = tree.selection()
