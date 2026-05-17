@@ -149,39 +149,41 @@ def cargar_tabla_completa():
     try:
         filas = lab.leer_todo_el_panel()
         for f in filas:
-            tree.insert("", tk.END, values=(f['id'], f['Age'], f['Peso'], f['Doctor'], f['tipo_muestra'], f['estado_muestra'], f['Historial']))
+            tree.insert("", tk.END, values=(f['id'], f['Edad'], f['Peso'], f['Doctor'], f['tipo_muestra'], f['estado_muestra'], f['Historial']))
     except Exception as e:
          messagebox.showerror("Error", f"Error de sincronización:\n{e}")
 
+
 def actualizar_registro_gui():
     seleccion = tree.selection()
-    if not seleccion:
-        messagebox.showwarning("Advertencia", "Seleccione un registro de la lista.")
-        return
-    
-    item = tree.item(seleccion)
-    valores = item['values']
-    paciente_id = str(valores[0])
+    if not seleccion: return
+    item = tree.item(seleccion);
+    valores = item['values'];
+    p_id = str(valores[0])
 
-    nueva_edad = simpledialog.askstring("Modificar", "Nueva Edad (Age):", initialvalue=valores[1])
-    if nueva_edad is None: return
-    nuevo_peso = simpledialog.askstring("Modificar", "Nuevo Peso:", initialvalue=valores[2])
-    if nuevo_peso is None: return
-    nuevo_tipo = simpledialog.askstring("Modificar", "Nuevo Tipo de Muestra:", initialvalue=valores[4])
-    if nuevo_tipo is None: return
-    nuevo_estado = simpledialog.askstring("Modificar", "Nuevo Estado de Muestra:", initialvalue=valores[5])
-    if nuevo_estado is None: return
-    nuevo_historial = simpledialog.askstring("Modificar", "Historial Clínico:", initialvalue=valores[6])
-    if nuevo_historial is None: return
 
+    campo = simpledialog.askstring("Actualizar", "Opciones: Edad, Peso, Historial, Doctor, Estado")
+    if not campo: return
+    campo = campo.lower().strip()
     try:
-        nombre_doc = usuario_actual.email.split('@')[0]
-        datos_p = {'Age': int(nueva_edad), 'Peso': float(nuevo_peso), 'Historial': nuevo_historial, 'Doctor': str(nombre_doc)}
-        datos_m = {'tipo_muestra': nuevo_tipo, 'estado_muestra': nuevo_estado}
-        
-        lab.actualizar_datos_clinicos(paciente_id, datos_p, datos_m)
-        messagebox.showinfo("Éxito", "Campos actualizados correctamente.")
+        if campo == "edad":
+            n = simpledialog.askstring("Edad", "Nueva edad:", initialvalue=valores[1])
+            lab.actualizar_datos_clinicos(p_id, {'Edad': int(n)}, {})
+        elif campo == "peso":
+            n = simpledialog.askstring("Peso", "Nuevo peso:", initialvalue=valores[2])
+            lab.actualizar_datos_clinicos(p_id, {'Peso': float(n)}, {})
+        elif campo == "doctor":
+            n = simpledialog.askstring("Doctor", "Nuevo Doctor:", initialvalue=valores[3])
+            lab.actualizar_datos_clinicos(p_id, {'Doctor': n}, {})
+        elif campo == "estado":
+            n = simpledialog.askstring("Estado", "Nuevo Estado:", initialvalue=valores[5])
+            lab.actualizar_datos_clinicos(p_id, {}, {'estado_muestra': n})
+        elif campo == "historial":
+            n = simpledialog.askstring("Historial", "Nuevo Historial:", initialvalue=valores[6])
+            lab.actualizar_datos_clinicos(p_id, {'Historial': n}, {})
+
         cargar_tabla_completa()
+        messagebox.showinfo("Éxito", "Actualizado.")
     except Exception as e:
         messagebox.showerror("Error", str(e))
 
@@ -224,7 +226,7 @@ def abrir_ventana_principal():
     frame_form = tk.LabelFrame(root, text=" Formulario Clínico (Guardado en documento 'Pacientes') ", padx=10, pady=10)
     frame_form.pack(padx=15, pady=10, fill="x")
     
-    tk.Label(frame_form, text="Edad (Age):").grid(row=0, column=0, sticky="w", pady=5)
+    tk.Label(frame_form, text="Edad:").grid(row=0, column=0, sticky="w", pady=5)
     entry_edad = tk.Entry(frame_form, width=15)
     entry_edad.grid(row=0, column=1, pady=5, padx=5, sticky="w")
     
@@ -252,7 +254,7 @@ def abrir_ventana_principal():
     columnas = ("ID", "Edad", "Peso", "Doctor", "TipoMuestra", "EstadoMuestra", "Historial")
     tree = ttk.Treeview(frame_lista, columns=columnas, show="headings", selectmode="browse")
     tree.heading("ID", text="ID Mapa")
-    tree.heading("Edad", text="Edad (Age)")
+    tree.heading("Edad", text="Edad")
     tree.heading("Peso", text="Peso")
     tree.heading("Doctor", text="Doctor")
     tree.heading("TipoMuestra", text="Tipo Muestra")
