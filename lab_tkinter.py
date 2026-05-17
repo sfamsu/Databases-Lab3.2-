@@ -107,8 +107,8 @@ def ejecutar_registro():
         messagebox.showwarning("Contraseña corta", "La contraseña debe tener al menos 6 caracteres.")
         return
     try:
-        lab.registrar_usuario_email(nombre, apellido, email, password)
-        messagebox.showinfo("Éxito", f"Doctor/a {nombre_limpio} guardado correctamente en 'Doctores'.")
+        lab.registrar_usuario_email(email, password, nombre, apellido)
+        messagebox.showinfo("Éxito", f"Doctor/a {nombre} guardado correctamente en 'Doctores'.")
         mostrar_pantalla_inicial()
     except Exception as e:
         messagebox.showerror("Error", str(e))
