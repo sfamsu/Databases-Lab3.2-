@@ -247,12 +247,30 @@ def abrir_ventana_principal():
     frame_header = tk.Frame(root, bg="#2c3e50", height=50)
     frame_header.pack(fill="x", side="top")
     tk.Label(frame_header, text=" CLINICDATA - ARCHIVO DE PACIENTES", font=("Arial", 11, "bold"), fg="white", bg="#2c3e50").pack(side="left", padx=15, pady=10)
-    tk.Button(frame_header, text="Cerrar Sesión", command=cerrar_sesion_gui, bg="#e74c3c", fg="white", font=("Arial", 9, "bold"), padx=10).pack(side="right", padx=10, pady=10)
+
+    # Añadir menú desplegable
+    menu_perfil = tk.Menu(root, tearoff=0)
+
+    def modificar_perfil():
+        nuevo_nom = simpledialog.askstring("Perfil", "Editar Nombre Completo:", initialvalue=nombre_doc)
+        if nuevo_nom:
+            messagebox.showinfo("Perfil Actualizado", f"Nombre cambiado a: {nuevo_nom}")
+
+    menu_perfil.add_command(label="📝 Editar Mi Nombre", command=modificar_perfil)
+    menu_perfil.add_separator()
+    menu_perfil.add_command(label="🚪 Cerrar Sesión", command=cerrar_sesion_gui)
+
+    def mostrar_menu():
+        menu_perfil.post(btn_menu_perfil.winfo_rootx(), btn_menu_perfil.winfo_rooty() + btn_menu_perfil.winfo_height())
+
+    # Este botón sustituye al botón soso de "Cerrar Sesión" que tenías a la derecha
+    btn_menu_perfil = tk.Button(frame_header, text="Configuración ⚙️", command=mostrar_menu, bg="#34495e", fg="white",font=("Arial", 9, "bold"))
+    btn_menu_perfil.pack(side="right", padx=10, pady=10)
 
     avatar_canvas = tk.Canvas(frame_header, width=35, height=35, bg="#2c3e50", highlightthickness=0)
     avatar_canvas.pack(side="right", padx=15, pady=5)
     avatar_canvas.create_oval(2, 2, 33, 33, fill="#3498db", outline="")
-    
+
     nombre_doc = usuario_actual.email.split('@')[0]
     avatar_canvas.create_text(18, 18, text=nombre_doc[:4].upper(), fill="white", font=("Arial", 8, "bold"))
     tk.Label(frame_header, text=f"Doctor/a: {nombre_doc}", font=("Arial", 9), fg="white", bg="#2c3e50").pack(side="right", padx=5)
