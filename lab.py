@@ -5,7 +5,8 @@ import random
 
 try:
     cred = credentials.Certificate('credentials/serviceAccountKey.json')
-    firebase_admin.initialize_app(cred)
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app(cred)
     db = firestore.client()
     print(" Conexión a Firestore y Auth establecida correctamente.")
 except Exception as e:
@@ -43,7 +44,6 @@ def iniciar_sesion_simulado(email, password):
         user = auth.get_user_by_email(email)
 
         # 2. Control de seguridad: Si la contraseña es sospechosa o errónea, la rechazamos
-        # (Recuerda que en el registro obligas a que tenga mínimo 6 caracteres)
         if not password or len(password) < 6 or  password.isspace():
             raise Exception("Contraseña incorrecta o insegura.")
 
@@ -109,7 +109,7 @@ def leer_todo_el_panel():
                     
                     fila = {
                         'id': p_id,
-                        'Age': p_data.get('Age', 'N/A'),
+                        'Edad': p_data.get('Edad', 'N/A'),
                         'Peso': p_data.get('Peso', 'N/A'),
                         'Doctor': p_data.get('Doctor', 'N/A'),
                         'Historial': p_data.get('Historial', 'N/A'),
@@ -122,15 +122,20 @@ def leer_todo_el_panel():
         print(f"Error de lectura: {e}")
         return []
 
+
 def actualizar_datos_clinicos(paciente_id, datos_p, datos_m):
     if db is None:
         raise Exception("No hay conexión.")
     try:
-        doc_ref = db.collection('Clientes').document('Pacientes')
-        doc_ref.update({paciente_id: datos_p})
-        db.collection('muestras').document(paciente_id).update(datos_m)
+        if datos_p:
+            doc_ref_p = db.collection('Clientes').document('Pacientes')
+            actualizacion = {f"{paciente_id}.{k}": v for k, v in datos_p.items()}
+            doc_ref_p.update(actualizacion)
+
+        if datos_m:
+            db.collection('muestras').document(str(paciente_id)).set(datos_m, merge=True)
     except Exception as e:
-        raise Exception(f"Error al actualizar: {e}")
+        raise Exception(f"Error en Firestore: {e}")
 
 def eliminar_datos_clinicos(paciente_id):
     if db is None:
