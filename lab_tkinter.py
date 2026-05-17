@@ -105,27 +105,32 @@ def ejecutar_registro():
     except Exception as e:
         messagebox.showerror("Error", str(e))
 
+
 def agregar_desde_gui():
     edad = entry_edad.get().strip()
     peso = entry_peso.get().strip()
+    doc_id = entry_doc_id.get().strip()
+    sintoma = entry_sintoma.get().strip()
+    test_res = entry_test.get().strip()
     historial = entry_historial.get().strip()
-    tipo_m = entry_tipo_muestra.get().strip()
-    estado_m = entry_estado_muestra.get().strip()
 
-    if not edad or not peso or not historial or not tipo_m or not estado_m:
+    if not edad or not peso or not doc_id or not sintoma or not test_res or not historial:
         messagebox.showwarning("Advertencia", "Todos los campos son obligatorios.")
         return
 
     try:
-        doc_id = lab.agregar_datos_clinicos(usuario_actual.email, edad, historial, peso, tipo_m, estado_m)
-        messagebox.showinfo("Éxito", f"Paciente añadido debajo del 4005.\nID asignado: {doc_id}")
-        
+        nuevo_id = lab.agregar_datos_clinicos(doc_id, edad, historial, peso, sintoma, test_res)
+        messagebox.showinfo("Éxito", f"Paciente cardíaco añadido con ID: {nuevo_id}")
+
+        # Vaciamos los campos nuevos de forma correcta para que no queden textos viejos
         entry_edad.delete(0, tk.END)
         entry_peso.delete(0, tk.END)
+        entry_doc_id.delete(0, tk.END)
+        entry_sintoma.delete(0, tk.END)
+        entry_test.delete(0, tk.END)
         entry_historial.delete(0, tk.END)
-        entry_tipo_muestra.delete(0, tk.END)
-        entry_estado_muestra.delete(0, tk.END)
-        cargar_tabla_completa() 
+
+        cargar_tabla_completa()
     except Exception as e:
         messagebox.showerror("Error", str(e))
 
@@ -149,7 +154,16 @@ def cargar_tabla_completa():
     try:
         filas = lab.leer_todo_el_panel()
         for f in filas:
-            tree.insert("", tk.END, values=(f['id'], f['Edad'], f['Peso'], f['Doctor'], f['tipo_muestra'], f['estado_muestra'], f['Historial']))
+
+            tree.insert("", tk.END, values=(
+                f['id'],
+                f['Edad'],
+                f['Peso'],
+                f['Doctor'],
+                f['sintoma'],
+                f['test_resultado'],
+                f['Historial']
+            ))
     except Exception as e:
          messagebox.showerror("Error", f"Error de sincronización:\n{e}")
 
@@ -205,7 +219,7 @@ def borrar_muestra_gui():
              messagebox.showerror("Error", str(e))
 
 def abrir_ventana_principal():
-    global entry_edad, entry_peso, entry_historial, entry_tipo_muestra, entry_estado_muestra, tree
+    global entry_edad, entry_peso, entry_historial, entry_doc_id, entry_sintoma, entry_test, tree, frame_lista
     root = tk.Tk()
     root.title("ClinicData - Sistema Integrado")
     root.geometry("900x600")
@@ -225,49 +239,54 @@ def abrir_ventana_principal():
 
     frame_form = tk.LabelFrame(root, text=" Formulario Clínico (Guardado en documento 'Pacientes') ", padx=10, pady=10)
     frame_form.pack(padx=15, pady=10, fill="x")
-    
+
     tk.Label(frame_form, text="Edad:").grid(row=0, column=0, sticky="w", pady=5)
     entry_edad = tk.Entry(frame_form, width=15)
     entry_edad.grid(row=0, column=1, pady=5, padx=5, sticky="w")
-    
-    tk.Label(frame_form, text="Peso (Kg):").grid(row=0, column=2, sticky="w", pady=5, padx=15)
+
+    tk.Label(frame_form, text="Peso:").grid(row=0, column=2, sticky="w", pady=5, padx=15)
     entry_peso = tk.Entry(frame_form, width=15)
     entry_peso.grid(row=0, column=3, pady=5, padx=5, sticky="w")
-    
-    tk.Label(frame_form, text="Tipo Muestra:").grid(row=0, column=4, sticky="w", pady=5, padx=15)
-    entry_tipo_muestra = tk.Entry(frame_form, width=20)
-    entry_tipo_muestra.grid(row=0, column=5, pady=5, padx=5, sticky="w")
 
-    tk.Label(frame_form, text="Estado Muestra:").grid(row=1, column=0, sticky="w", pady=5)
-    entry_estado_muestra = tk.Entry(frame_form, width=15)
-    entry_estado_muestra.grid(row=1, column=1, pady=5, padx=5, sticky="w")
+    tk.Label(frame_form, text="ID Doctor:").grid(row=0, column=4, sticky="w", pady=5, padx=15)
+    entry_doc_id = tk.Entry(frame_form, width=20)
+    entry_doc_id.grid(row=0, column=5, pady=5, padx=5, sticky="w")
 
-    tk.Label(frame_form, text="Historial Clínico:").grid(row=1, column=2, sticky="w", pady=5, padx=15)
-    entry_historial = tk.Entry(frame_form, width=52)
-    entry_historial.grid(row=1, column=3, columnspan=3, pady=5, padx=5, sticky="w")
-    
-    tk.Button(frame_form, text="Guardar Registro Clínico", command=agregar_desde_gui, bg="#3498db", fg="white", font=("Arial", 9, "bold")).grid(row=2, columnspan=6, pady=10)
+    tk.Label(frame_form, text="Síntoma Detectado:").grid(row=1, column=0, sticky="w", pady=5)
+    entry_sintoma = tk.Entry(frame_form, width=15)
+    entry_sintoma.grid(row=1, column=1, pady=5, padx=5, sticky="w")
+
+    tk.Label(frame_form, text="Resultados Test:").grid(row=1, column=2, sticky="w",
+                                                                                      pady=5, padx=15)
+    entry_test = tk.Entry(frame_form, width=52)
+    entry_test.grid(row=1, column=3, columnspan=3, pady=5, padx=5, sticky="w")
+
+    tk.Label(frame_form, text="Historial General:").grid(row=2, column=0, sticky="w", pady=5)
+    entry_historial = tk.Entry(frame_form, width=85)
+    entry_historial.grid(row=2, column=1, columnspan=5, pady=5, padx=5, sticky="w")
+
+    tk.Button(frame_form, text="Guardar Registro Clínico", command=agregar_desde_gui, bg="#3498db", fg="white",font=("Arial", 10, "bold")).grid(row=3, column=0, columnspan=6, pady=15, padx=10, sticky="ew")
 
     frame_lista = tk.LabelFrame(root, text=" Campos del documento 'Pacientes' en Tiempo Real ", padx=10, pady=10)
     frame_lista.pack(padx=15, pady=5, fill="both", expand=True)
 
-    columnas = ("ID", "Edad", "Peso", "Doctor", "TipoMuestra", "EstadoMuestra", "Historial")
+    columnas = ("ID", "Edad", "Peso", "Doctor", "Sintoma", "Test", "Historial")
     tree = ttk.Treeview(frame_lista, columns=columnas, show="headings", selectmode="browse")
-    tree.heading("ID", text="ID Mapa")
+    tree.heading("ID", text="ID Paciente")
     tree.heading("Edad", text="Edad")
     tree.heading("Peso", text="Peso")
-    tree.heading("Doctor", text="Doctor")
-    tree.heading("TipoMuestra", text="Tipo Muestra")
-    tree.heading("EstadoMuestra", text="Estado Muestra")
-    tree.heading("Historial", text="Historial")
-    
-    tree.column("ID", width=90, anchor="center")
+    tree.heading("Doctor", text="ID Doctor")
+    tree.heading("Sintoma", text="Síntomas Activos")
+    tree.heading("Test", text="Resultados del Test")
+    tree.heading("Historial", text="Historial Clínico")
+
+    tree.column("ID", width=80, anchor="center")
     tree.column("Edad", width=70, anchor="center")
     tree.column("Peso", width=70, anchor="center")
     tree.column("Doctor", width=100, anchor="center")
-    tree.column("TipoMuestra", width=120, anchor="center")
-    tree.column("EstadoMuestra", width=120, anchor="center")
-    tree.column("Historial", width=220)
+    tree.column("Sintoma", width=140, anchor="center")
+    tree.column("Test", width=200, anchor="center")
+    tree.column("Historial", width=250)
     tree.pack(fill="both", expand=True)
 
     frame_acciones = tk.Frame(root, pady=10)

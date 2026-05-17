@@ -53,68 +53,77 @@ def iniciar_sesion_simulado(email, password):
 
 # --- CRUD CORREGIDO: NUEVO CAMPO DENTRO DEL DOCUMENTO 'Pacientes' DE LA COLECCIÓN 'Clientes' ---
 
-def agregar_datos_clinicos(doctor_email, edad, historial, peso, tipo_muestra, estado_muestra):
+def agregar_datos_clinicos(doctor_id, edad, historial, peso, descripcion_sintoma, resultado_test):
     if db is None:
         raise Exception("No hay conexión con la base de datos.")
     try:
-        nombre_doc = doctor_email.split('@')[0]
-        # Generamos un ID numérico de 4 dígitos correlativo al tuyo (ej: 4006, 4007...)
+        # Generamos un ID correlativo para el nuevo paciente cardíaco
         id_nuevo_paciente = str(random.randint(4006, 4999))
-        
-        # Diccionario con los campos idénticos a tu captura de pantalla
+
+        # 1. Datos principales que van en Clientes > Pacientes
         datos_paciente = {
-            'Nombre': nombre,
-            'Apellidos': apellidos,
             'Edad': int(edad),
-            'Doctor': str(nombre_doc),
+            'Doctor': int(doctor_id),  # Guardamos el ID numérico del médico (ej: 2005)
             'Historial': historial,
             'Peso': float(peso)
         }
-        
-        # RUTA EXACTA DE TU CAPTURA: Colección 'Clientes' -> Documento 'Pacientes'
+
         doc_ref = db.collection('Clientes').document('Pacientes')
-        
-        # Se añade como un campo nuevo (mapa) debajo de tu registro 4005
         doc_ref.update({
             id_nuevo_paciente: datos_paciente
         })
-        
-        # Colección muestras (intacta, vinculada por el mismo ID numérico)
-        db.collection('muestras').document(id_nuevo_paciente).set({
-            'paciente_id': id_nuevo_paciente,
-            'tipo_muestra': tipo_muestra,
-            'estado_muestra': estado_muestra,
-            'fecha_analisis': datetime.now(timezone.utc)
+
+        # 2. ANIDADO DE SÍNTOMAS: Subcolección dentro del propio paciente
+        db.collection('Clientes').document('Pacientes') \
+            .collection('Sintomas').document(id_nuevo_paciente).set({
+            'ID Sintomas': random.randint(1, 99),
+            'Descripción': descripcion_sintoma,
+            'Intensidad': random.randint(1, 5)
         })
+
+        # 3. ANIDADO DE TEST CARDÍACO: Subcolección dentro del propio paciente
+        db.collection('Clientes').document('Pacientes') \
+            .collection('test').document(id_nuevo_paciente).set({
+            'ID Test': random.randint(1, 99),
+            'Fecha test': datetime.now(timezone.utc),
+            'Results': resultado_test  # Ej: "Ecocardiograma: FEVI 45%"
+        })
+
         return id_nuevo_paciente
     except ValueError:
-        raise Exception("La edad debe ser un número entero y el peso un decimal.")
+        raise Exception("La edad y el ID del doctor deben ser enteros, y el peso un decimal.")
     except Exception as e:
-        raise Exception(f"Error en Firestore: {e}")
+        raise Exception(f"Error en la estructura de Firestore: {e}")
+
 
 def leer_todo_el_panel():
     if db is None:
         return []
     try:
-        # Leemos el documento 'Pacientes' de la colección 'Clientes'
         doc_ref = db.collection('Clientes').document('Pacientes').get()
         lista_completa = []
-        
+
         if doc_ref.exists:
             todos_los_pacientes = doc_ref.to_dict() or {}
             for p_id, p_data in todos_los_pacientes.items():
                 if isinstance(p_data, dict):
-                    m_doc = db.collection('muestras').document(str(p_id)).get()
-                    m_data = m_doc.to_dict() if m_doc.exists else {}
-                    
+                    # Leemos sus síntomas desde su subcolección anidada
+                    s_doc = db.collection('Clientes').document('Pacientes').collection('Sintomas').document(
+                        str(p_id)).get()
+                    s_data = s_doc.to_dict() if s_doc.exists else {}
+
+                    # Leemos sus test cardíacos desde su subcolección anidada
+                    t_doc = db.collection('Clientes').document('Pacientes').collection('test').document(str(p_id)).get()
+                    t_data = t_doc.to_dict() if t_doc.exists else {}
+
                     fila = {
                         'id': p_id,
                         'Edad': p_data.get('Edad', 'N/A'),
                         'Peso': p_data.get('Peso', 'N/A'),
                         'Doctor': p_data.get('Doctor', 'N/A'),
                         'Historial': p_data.get('Historial', 'N/A'),
-                        'tipo_muestra': m_data.get('tipo_muestra', 'N/A'),
-                        'estado_muestra': m_data.get('estado_muestra', 'N/A')
+                        'sintoma': s_data.get('Descripción', 'Ninguno'),
+                        'test_resultado': t_data.get('Results', 'Sin registrar')
                     }
                     lista_completa.append(fila)
         return lista_completa
