@@ -132,17 +132,26 @@ def leer_todo_el_panel():
         return []
 
 
-def actualizar_datos_clinicos(paciente_id, datos_p, datos_m):
+def actualizar_datos_clinicos(paciente_id, datos_p, datos_m, campo_modificado=None):
     if db is None:
         raise Exception("No hay conexión.")
     try:
+        # 1. ACTUALIZAR MAPA PRINCIPAL (Edad, Peso, ID Doctor o Historial)
         if datos_p:
             doc_ref_p = db.collection('Clientes').document('Pacientes')
             actualizacion = {f"{paciente_id}.{k}": v for k, v in datos_p.items()}
             doc_ref_p.update(actualizacion)
 
+        # 2. ACTUALIZAR SUBCOLECCIONES (Síntomas o Tests)
         if datos_m:
-            db.collection('muestras').document(str(paciente_id)).set(datos_m, merge=True)
+            if campo_modificado == "sintoma":
+                db.collection('Clientes').document('Pacientes') \
+                    .collection('Sintomas').document(str(paciente_id)).update(datos_m)
+
+            elif campo_modificado == "test":
+                db.collection('Clientes').document('Pacientes') \
+                    .collection('test').document(str(paciente_id)).update(datos_m)
+
     except Exception as e:
         raise Exception(f"Error en Firestore: {e}")
 
