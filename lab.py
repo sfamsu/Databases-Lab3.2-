@@ -14,7 +14,7 @@ except Exception as e:
 
 # --- AUTENTICACIÓN: DOCTORES DENTRO DEL DOCUMENTO 'DOCTORES' ---
 
-def registrar_usuario_email(email, password):
+def registrar_usuario_email(email, password, nombre, apellido):
     if db is None:
         raise Exception("No hay conexión con el servidor.")
     try:
@@ -25,7 +25,8 @@ def registrar_usuario_email(email, password):
         doc_ref = db.collection('Personal').document('Doctores')
         doc_ref.update({
             user.uid: {
-                'nombre': str(nombre_doctor),
+                'nombre': str(nombre),
+                'apellido': str(apellido),
                 'correo': email,
                 'fecha_alta': datetime.now(timezone.utc)
             }
