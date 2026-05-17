@@ -189,7 +189,7 @@ def actualizar_registro_gui():
     try:
         if campo in ["edad", "age"]:
             n = simpledialog.askstring("Modificar Edad", "Nueva edad del paciente:", initialvalue=valores[1])
-            if n: lab.actualizar_datos_clinicos(p_id, {'Age': int(n)}, {})
+            if n: lab.actualizar_datos_clinicos(p_id, {'Edad': int(n)}, {})
 
         elif campo in ["peso"]:
             n = simpledialog.askstring("Modificar Peso", "Nuevo peso del paciente:", initialvalue=valores[2])
