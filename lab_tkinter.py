@@ -324,7 +324,7 @@ def abrir_ventana_principal():
     tree.column("Doctor", width=100, anchor="center")
     tree.column("Sintoma", width=140, anchor="center")
     tree.column("Test", width=200, anchor="center")
-    tree.column("Historial", width=250)
+    tree.column("Historial", width=250, anchor='center')
     tree.pack(fill="both", expand=True)
 
     frame_acciones = tk.Frame(root, pady=10)
