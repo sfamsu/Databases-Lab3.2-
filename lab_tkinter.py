@@ -153,7 +153,15 @@ def cargar_tabla_completa():
         tree.delete(row)
     try:
         filas = lab.leer_todo_el_panel()
+
+        # Buscamos el ID numérico para hacer el filtro de forma matemática
+        filtro_actual = combo_filtro.get() if 'combo_filtro' in globals() else "Todos"
+        id_doc_actual = usuario_actual.id_doctor_num if usuario_actual and hasattr(usuario_actual,'id_doctor_num') else ""
+
         for f in filas:
+            # Comparamos el ID numérico guardado en el paciente con el del doctor logueado
+            if filtro_actual == "Mis Pacientes" and str(f['Doctor']) != str(id_doc_actual):
+                continue
 
             tree.insert("", tk.END, values=(
                 f['id'],
@@ -290,6 +298,11 @@ def abrir_ventana_principal():
     entry_doc_id = tk.Entry(frame_form, width=20)
     entry_doc_id.grid(row=0, column=5, pady=5, padx=5, sticky="w")
 
+    # Inserta el ID numérico del doctor
+    id_medico = usuario_actual.id_doctor_num if hasattr(usuario_actual, 'id_doctor_num') else "2005"
+    entry_doc_id.insert(0, id_medico)
+    entry_doc_id.config(state="disabled")
+
     tk.Label(frame_form, text="Síntoma Detectado:").grid(row=1, column=0, sticky="w", pady=5)
     entry_sintoma = tk.Entry(frame_form, width=15)
     entry_sintoma.grid(row=1, column=1, pady=5, padx=5, sticky="w")
@@ -307,6 +320,20 @@ def abrir_ventana_principal():
 
     frame_lista = tk.LabelFrame(root, text=" Campos del documento 'Pacientes' en Tiempo Real ", padx=10, pady=10)
     frame_lista.pack(padx=15, pady=5, fill="both", expand=True)
+
+    # Contenedor para el filtro
+    frame_filtro = tk.Frame(frame_lista)
+    frame_filtro.pack(fill="x", pady=5)
+
+    tk.Label(frame_filtro, text="Filtrar por asignación:").pack(side="left", padx=5)
+
+    global combo_filtro
+    combo_filtro = ttk.Combobox(frame_filtro, values=["Todos", "Mis Pacientes"], state="readonly", width=15)
+    combo_filtro.set("Todos")  # Por defecto que muestre todos
+    combo_filtro.pack(side="left", padx=5)
+
+    # Hacer que cuando cambie la opción, se refresque la tabla sola
+    combo_filtro.bind("<<ComboboxSelected>>", lambda e: cargar_tabla_completa())
 
     columnas = ("ID", "Edad", "Peso", "Doctor", "Sintoma", "Test", "Historial")
     tree = ttk.Treeview(frame_lista, columns=columnas, show="headings", selectmode="browse")
