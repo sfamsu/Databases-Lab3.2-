@@ -57,64 +57,79 @@ def agregar_datos_clinicos(doctor_id, edad, historial, peso, descripcion_sintoma
     if db is None:
         raise Exception("No hay conexión con la base de datos.")
     try:
-        # Generamos un ID correlativo para el nuevo paciente cardíaco
-        id_nuevo_paciente = str(random.randint(4006, 4999))
+        # Generamos un ID aleatorio para el paciente (ej: "4015")
+        id_nuevo_paciente = str(random.randint(4000, 4999))
 
-        # 1. Datos principales que van en Clientes > Pacientes
-        datos_paciente = {
-            'Edad': int(edad),
-            'Doctor': int(doctor_id),  # Guardamos el ID numérico del médico (ej: 2005)
-            'Historial': historial,
-            'Peso': float(peso)
+        # Referencias a las rutas exactas en tu Firebase
+        ref_datos = db.collection('Clientes').document('Pacientes').collection('Seguimiento paciente').document('Datos_Generales')
+        ref_sintomas = db.collection('Clientes').document('Pacientes').collection('Seguimiento paciente').document('Sintomas')
+        ref_test = db.collection('Clientes').document('Pacientes').collection('Seguimiento paciente').document('test')
+
+        # Preparar los bloques de datos con el ID del nuevo paciente como clave
+        nuevos_datos = {
+            id_nuevo_paciente: {
+                'Edad': int(edad),
+                'Doctor': str(doctor_id),
+                'Historial': historial,
+                'Peso': float(peso)
+            }
         }
 
-        doc_ref = db.collection('Clientes').document('Pacientes')
-        doc_ref.update({
-            id_nuevo_paciente: datos_paciente
-        })
+        nuevos_sintomas = {
+            id_nuevo_paciente: {
+                'ID_Sintomas': random.randint(1, 99),
+                'Descripción': descripcion_sintoma,
+                'Intensidad': random.randint(1, 5)
+            }
+        }
 
-        # 2. ANIDADO DE SÍNTOMAS: Subcolección dentro del propio paciente
-        db.collection('Clientes').document('Pacientes') \
-            .collection('Sintomas').document(id_nuevo_paciente).set({
-            'ID Sintomas': random.randint(1, 99),
-            'Descripción': descripcion_sintoma,
-            'Intensidad': random.randint(1, 5)
-        })
+        nuevos_test = {
+            id_nuevo_paciente: {
+                'ID_Test': random.randint(1, 99),
+                'Fecha_test': datetime.now(timezone.utc),
+                'Results': resultado_test
+            }
+        }
 
-        # 3. ANIDADO DE TEST CARDÍACO: Subcolección dentro del propio paciente
-        db.collection('Clientes').document('Pacientes') \
-            .collection('test').document(id_nuevo_paciente).set({
-            'ID Test': random.randint(1, 99),
-            'Fecha test': datetime.now(timezone.utc),
-            'Results': resultado_test  # Ej: "Ecocardiograma: FEVI 45%"
-        })
+        # Usamos .set con merge=True para crear o actualizar automáticamente sin romper nada
+        ref_datos.set(nuevos_datos, merge=True)
+        ref_sintomas.set(nuevos_sintomas, merge=True)
+        ref_test.set(nuevos_test, merge=True)
 
         return id_nuevo_paciente
     except ValueError:
-        raise Exception("La edad y el ID del doctor deben ser enteros, y el peso un decimal.")
+        raise Exception("La edad debe ser un entero y el peso un decimal.")
     except Exception as e:
-        raise Exception(f"Error en la estructura de Firestore: {e}")
+        raise Exception(f"Error al guardar en la estructura de Firestore: {e}")
 
 
 def leer_todo_el_panel():
     if db is None:
         return []
     try:
-        doc_ref = db.collection('Clientes').document('Pacientes').get()
         lista_completa = []
 
-        if doc_ref.exists:
-            todos_los_pacientes = doc_ref.to_dict() or {}
-            for p_id, p_data in todos_los_pacientes.items():
-                if isinstance(p_data, dict):
-                    # Leemos sus síntomas desde su subcolección anidada
-                    s_doc = db.collection('Clientes').document('Pacientes').collection('Sintomas').document(
-                        str(p_id)).get()
-                    s_data = s_doc.to_dict() if s_doc.exists else {}
+        # 1. Leemos el documento de Datos Generales
+        dg_doc = db.collection('Clientes').document('Pacientes') \
+            .collection('Seguimiento paciente').document('Datos_Generales').get()
 
-                    # Leemos sus test cardíacos desde su subcolección anidada
-                    t_doc = db.collection('Clientes').document('Pacientes').collection('test').document(str(p_id)).get()
-                    t_data = t_doc.to_dict() if t_doc.exists else {}
+        if dg_doc.exists:
+            todos_los_datos = dg_doc.to_dict() or {}
+
+            # Leemos también los documentos de síntomas y tests para cruzarlos
+            sintomas_doc = db.collection('Clientes').document('Pacientes') \
+                .collection('Seguimiento paciente').document('Sintomas').get()
+            sintomas_todos = sintomas_doc.to_dict() if sintomas_doc.exists else {}
+
+            test_doc = db.collection('Clientes').document('Pacientes') \
+                .collection('Seguimiento paciente').document('test').get()
+            test_todos = test_doc.to_dict() if test_doc.exists else {}
+
+            # 2. Reconstruimos la ficha de cada paciente usando su ID
+            for p_id, p_data in todos_los_datos.items():
+                if isinstance(p_data, dict):
+                    s_data = sintomas_todos.get(p_id, {})
+                    t_data = test_todos.get(p_id, {})
 
                     fila = {
                         'id': p_id,
@@ -128,7 +143,7 @@ def leer_todo_el_panel():
                     lista_completa.append(fila)
         return lista_completa
     except Exception as e:
-        print(f"Error de lectura: {e}")
+        print(f"Error al leer el panel: {e}")
         return []
 
 
