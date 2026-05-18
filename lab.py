@@ -20,12 +20,15 @@ def registrar_usuario_email(email, password):
         raise Exception("No hay conexión con el servidor.")
     try:
         user = auth.create_user(email=email, password=password)
-        # Extraemos el string limpio antes del @ sin corchetes
         nombre_doctor = email.split('@')[0]
-        
+
+        # Generamos un ID numérico único para este doctor
+        id_doctor_numerico = random.randint(2000, 2999)
+
         doc_ref = db.collection('Personal').document('Doctores')
         doc_ref.update({
             user.uid: {
+                'id_doctor': id_doctor_numerico,  #Guardamos su ID numérico
                 'nombre': str(nombre_doctor),
                 'correo': email,
                 'fecha_alta': datetime.now(timezone.utc)
@@ -46,6 +49,16 @@ def iniciar_sesion_simulado(email, password):
         # 2. Control de seguridad: Si la contraseña es sospechosa o errónea, la rechazamos
         if not password or len(password) < 6 or  password.isspace():
             raise Exception("Contraseña incorrecta o insegura.")
+
+        # Buscamos el ID numérico asignado a este doctor en Firestore
+        doc_ref = db.collection('Personal').document('Doctores').get()
+        if doc_ref.exists:
+            datos_doctores = doc_ref.to_dict() or {}
+            datos_mi_perfil = datos_doctores.get(user.uid, {})
+                # Guardamos el ID numérico dentro del propio objeto 'user' para usarlo en la interfaz
+            user.id_doctor_num = datos_mi_perfil.get('id_doctor', '9999')
+        else:
+            user.id_doctor_num = '9999'
 
         return user
     except Exception:
@@ -110,19 +123,16 @@ def leer_todo_el_panel():
         lista_completa = []
 
         # 1. Leemos el documento de Datos Generales
-        dg_doc = db.collection('Clientes').document('Pacientes') \
-            .collection('Seguimiento paciente').document('Datos_Generales').get()
+        dg_doc = db.collection('Clientes').document('Pacientes').collection('Seguimiento paciente').document('Datos_Generales').get()
 
         if dg_doc.exists:
             todos_los_datos = dg_doc.to_dict() or {}
 
             # Leemos también los documentos de síntomas y tests para cruzarlos
-            sintomas_doc = db.collection('Clientes').document('Pacientes') \
-                .collection('Seguimiento paciente').document('Sintomas').get()
+            sintomas_doc = db.collection('Clientes').document('Pacientes').collection('Seguimiento paciente').document('Sintomas').get()
             sintomas_todos = sintomas_doc.to_dict() if sintomas_doc.exists else {}
 
-            test_doc = db.collection('Clientes').document('Pacientes') \
-                .collection('Seguimiento paciente').document('test').get()
+            test_doc = db.collection('Clientes').document('Pacientes').collection('Seguimiento paciente').document('test').get()
             test_todos = test_doc.to_dict() if test_doc.exists else {}
 
             # 2. Reconstruimos la ficha de cada paciente usando su ID
@@ -160,12 +170,10 @@ def actualizar_datos_clinicos(paciente_id, datos_p, datos_m, campo_modificado=No
         # 2. ACTUALIZAR SUBCOLECCIONES (Síntomas o Tests)
         if datos_m:
             if campo_modificado == "sintoma":
-                db.collection('Clientes').document('Pacientes') \
-                    .collection('Sintomas').document(str(paciente_id)).update(datos_m)
+                db.collection('Clientes').document('Pacientes').collection('Sintomas').document(str(paciente_id)).update(datos_m)
 
             elif campo_modificado == "test":
-                db.collection('Clientes').document('Pacientes') \
-                    .collection('test').document(str(paciente_id)).update(datos_m)
+                db.collection('Clientes').document('Pacientes').collection('test').document(str(paciente_id)).update(datos_m)
 
     except Exception as e:
         raise Exception(f"Error en Firestore: {e}")
