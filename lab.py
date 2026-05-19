@@ -1,3 +1,4 @@
+import hashlib # Para poder tener seguridad en la contraseña
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
 from datetime import datetime, timezone
@@ -25,12 +26,16 @@ def registrar_usuario_email(email, password):
         # Generamos un ID numérico único para este doctor
         id_doctor_numerico = random.randint(2000, 2999)
 
+        # Encriptamos la contraseña antes de guardarla para que nadie pueda verla en la base de datos
+        password_encriptada = hashlib.sha256(password.encode()).hexdigest()
+
         doc_ref = db.collection('Personal').document('Doctores')
         doc_ref.update({
             user.uid: {
-                'id_doctor': id_doctor_numerico,  #Guardamos su ID numérico
+                'id_doctor': id_doctor_numerico,
                 'nombre': str(nombre_doctor),
                 'correo': email,
+                'password_hash': password_encriptada,
                 'fecha_alta': datetime.now(timezone.utc)
             }
         })
@@ -43,25 +48,31 @@ def iniciar_sesion_simulado(email, password):
     if db is None:
         raise Exception("No hay conexión con el servidor.")
     try:
-        # 1. Comprobamos si el correo existe en Firebase Auth
+        # Verificamos primero si el correo existe en Firebase Auth
         user = auth.get_user_by_email(email)
 
-        # 2. Control de seguridad: Si la contraseña es sospechosa o errónea, la rechazamos
-        if not password or len(password) < 6 or  password.isspace():
-            raise Exception("Contraseña incorrecta o insegura.")
-
-        # Buscamos el ID numérico asignado a este doctor en Firestore
+        # Buscamos los datos de este doctor en Firestore
         doc_ref = db.collection('Personal').document('Doctores').get()
-        if doc_ref.exists:
-            datos_doctores = doc_ref.to_dict() or {}
-            datos_mi_perfil = datos_doctores.get(user.uid, {})
-                # Guardamos el ID numérico dentro del propio objeto 'user' para usarlo en la interfaz
-            user.id_doctor_num = datos_mi_perfil.get('id_doctor', '9999')
-        else:
-            user.id_doctor_num = '9999'
+        if not doc_ref.exists:
+            raise Exception("Error interno: No se encuentra el registro de doctores.")
+
+        datos_doctores = doc_ref.to_dict() or {}
+        datos_mi_perfil = datos_doctores.get(user.uid, {})
+
+        # Encriptamos la contraseña introducida para compararla
+        hash_introducido = hashlib.sha256(password.encode()).hexdigest()
+        hash_guardado = datos_mi_perfil.get('password_hash', '')
+
+        # Comprobamos si las contraseñas coinciden de verdad
+        if hash_introducido != hash_guardado:
+            raise Exception("Contraseña incorrecta.")
+
+        # Rescatamos su ID de doctor como hacíamos ayer
+        user.id_doctor_num = datos_mi_perfil.get('id_doctor', '9999')
 
         return user
-    except Exception:
+    except Exception as e:
+        # Ponemos un mensaje genérico para no dar pistas a los hackers
         raise Exception("Usuario o contraseña incorrectos.")
 
 # --- CRUD CORREGIDO: NUEVO CAMPO DENTRO DEL DOCUMENTO 'Pacientes' DE LA COLECCIÓN 'Clientes' ---
