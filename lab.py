@@ -161,30 +161,45 @@ def actualizar_datos_clinicos(paciente_id, datos_p, datos_m, campo_modificado=No
     if db is None:
         raise Exception("No hay conexión.")
     try:
-        # 1. ACTUALIZAR MAPA PRINCIPAL (Edad, Peso, ID Doctor o Historial)
-        if datos_p:
-            doc_ref_p = db.collection('Clientes').document('Pacientes')
-            actualizacion = {f"{paciente_id}.{k}": v for k, v in datos_p.items()}
-            doc_ref_p.update(actualizacion)
+        paciente_id_str = str(paciente_id)
+        base_ref = db.collection('Clientes').document('Pacientes').collection('Seguimiento paciente')
 
-        # 2. ACTUALIZAR SUBCOLECCIONES (Síntomas o Tests)
+        # 1. Si nos piden actualizar Datos Generales (Edad, Peso, Historial)
+        if datos_p:
+            ref_datos = base_ref.document('Datos_Generales')
+            # Preparamos la estructura: { '4005': { 'Edad': 30, 'Peso': 70.5... } }
+            actualizacion = {paciente_id_str: datos_p}
+            ref_datos.set(actualizacion, merge=True)
+
+        # 2. Si nos piden actualizar Síntomas o Tests
         if datos_m:
             if campo_modificado == "sintoma":
-                db.collection('Clientes').document('Pacientes').collection('Sintomas').document(str(paciente_id)).update(datos_m)
+                ref_sintomas = base_ref.document('Sintomas')
+                actualizacion = {paciente_id_str: datos_m}
+                ref_sintomas.set(actualizacion, merge=True)
 
             elif campo_modificado == "test":
-                db.collection('Clientes').document('Pacientes').collection('test').document(str(paciente_id)).update(datos_m)
+                ref_test = base_ref.document('test')
+                actualizacion = {paciente_id_str: datos_m}
+                ref_test.set(actualizacion, merge=True)
 
     except Exception as e:
-        raise Exception(f"Error en Firestore: {e}")
+        raise Exception(f"Error en Firestore al actualizar: {e}")
 
 def eliminar_datos_clinicos(paciente_id):
     if db is None:
         raise Exception("No hay conexión.")
     try:
-        db.collection('Clientes').document('Pacientes').update({
-            paciente_id: firestore.DELETE_FIELD
-        })
-        db.collection('muestras').document(paciente_id).delete()
+        paciente_id_str = str(paciente_id)
+        base_ref = db.collection('Clientes').document('Pacientes').collection('Seguimiento paciente')
+
+        # Usamos la instrucción especial de Firebase para borrar un campo específico dentro de un mapa
+        borrado_campo = {paciente_id_str: firestore.DELETE_FIELD}
+
+        # Borramos el rastro del paciente en los tres documentos
+        base_ref.document('Datos_Generales').update(borrado_campo)
+        base_ref.document('Sintomas').update(borrado_campo)
+        base_ref.document('test').update(borrado_campo)
+
     except Exception as e:
-        raise Exception(f"Error al eliminar: {e}")
+        raise Exception(f"Error en Firestore al eliminar: {e}")
