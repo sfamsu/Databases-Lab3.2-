@@ -16,24 +16,24 @@ except Exception as e:
 
 # --- AUTENTICACIÓN: DOCTORES DENTRO DEL DOCUMENTO 'DOCTORES' ---
 
-def registrar_usuario_email(email, password):
+def registrar_usuario_email(email, password, nombre_completo, especialidad):
     if db is None:
         raise Exception("No hay conexión con el servidor.")
     try:
         user = auth.create_user(email=email, password=password)
-        nombre_doctor = email.split('@')[0]
 
-        # Generamos un ID numérico único para este doctor
+        # Generamos el ID numérico aleatorio para el doctor
         id_doctor_numerico = random.randint(2000, 2999)
 
-        # Encriptamos la contraseña antes de guardarla para que nadie pueda verla en la base de datos
+        # Encriptamos la contraseña
         password_encriptada = hashlib.sha256(password.encode()).hexdigest()
 
         doc_ref = db.collection('Personal').document('Doctores')
         doc_ref.update({
             user.uid: {
                 'id_doctor': id_doctor_numerico,
-                'nombre': str(nombre_doctor),
+                'nombre': str(nombre_completo),
+                'especialidad': str(especialidad),
                 'correo': email,
                 'password_hash': password_encriptada,
                 'fecha_alta': datetime.now(timezone.utc)
@@ -67,9 +67,10 @@ def iniciar_sesion_simulado(email, password):
         if hash_introducido != hash_guardado:
             raise Exception("Contraseña incorrecta.")
 
-        # Rescatamos su ID de doctor como hacíamos ayer
+        # Guardamos todos los datos reales del perfil en el objeto de la sesión
         user.id_doctor_num = datos_mi_perfil.get('id_doctor', '9999')
-
+        user.nombre_real = datos_mi_perfil.get('nombre', email.split('@')[0])
+        user.especialidad = datos_mi_perfil.get('especialidad', 'General')
         return user
     except Exception as e:
         # Ponemos un mensaje genérico para no dar pistas a los hackers
@@ -214,3 +215,18 @@ def eliminar_datos_clinicos(paciente_id):
 
     except Exception as e:
         raise Exception(f"Error en Firestore al eliminar: {e}")
+
+
+def actualizar_perfil_doctor(uid, nuevo_nombre, nueva_especialidad):
+    if db is None:
+        raise Exception("No hay conexión con el servidor.")
+    try:
+        doc_ref = db.collection('Personal').document('Doctores')
+
+        # Actualizamos solo los dos campos del doctor actual en Firestore
+        doc_ref.update({
+            f"{uid}.nombre": str(nuevo_nombre),
+            f"{uid}.especialidad": str(nueva_especialidad)
+        })
+    except Exception as e:
+        raise Exception(f"Error al actualizar el perfil en Firestore: {e}")
